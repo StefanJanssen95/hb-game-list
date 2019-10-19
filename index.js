@@ -1,4 +1,8 @@
+const __steamId = null; // Enter your steam ID here
+
 const gameKeys = {};
+let isSteamServiceAvailable = true;
+let steamGames = null;
 
 const beep = (function() {
     var ctxClass = window.audioContext || window.AudioContext || window.AudioContext || window.webkitAudioContext
@@ -29,9 +33,16 @@ function checkPage() {
         const name = row.querySelector('.game-name>h4').getAttribute('title');
 
         if (gameKeys[platform] == undefined)
-            gameKeys[platform] = [];
+            gameKeys[platform] = {};
 
-        gameKeys[platform].push(name);
+        if (gameKeys[platform][name] == undefined)
+            gameKeys[platform][name] = { count: 0, owned: false, wishlistedBy: [] };
+
+        gameKeys[platform][name].count++;
+
+        if (steamGames && !!steamGames.find(f => f.name === name)) {
+            gameKeys[platform][name].owned = true;
+        }
     }
 }
 
@@ -43,6 +54,20 @@ function nextPage() {
     } else {
         return false;
     }
+}
+
+async function getOwnedSteamGames(steamId) {
+    const response = await fetch(`https://localhost:5001/api/games/owned/${steamId}`);
+    jsonResponse = await response.json();
+    const ownedGames = jsonResponse.data.ownedGames;
+    return ownedGames;
+}
+
+
+
+// Start logic
+if (isSteamServiceAvailable && __steamId) {
+    steamGames = await getOwnedSteamGames(__steamId);
 }
 
 do {
